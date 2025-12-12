@@ -59,7 +59,6 @@ def launch(
     participant_index,
     network_params,
     extra_files_artifacts,
-    bootnodoor_enode=None,
 ):
     cl_client_name = service_name.split("-")[3]
 
@@ -78,7 +77,6 @@ def launch(
         participant_index,
         network_params,
         extra_files_artifacts,
-        bootnodoor_enode,
     )
 
     service = plan.add_service(service_name, config)
@@ -106,7 +104,6 @@ def get_config(
     participant_index,
     network_params,
     extra_files_artifacts,
-    bootnodoor_enode=None,
 ):
     public_ports = {}
     public_ports_for_component = None
@@ -164,10 +161,7 @@ def get_config(
         "--metrics.addr=0.0.0.0",
         "--metrics.port={0}".format(METRICS_PORT_NUM),
     ]
-    # Handle bootnode configuration with bootnodoor_enode override
-    if bootnodoor_enode != None:
-        cmd.append("--bootnodes=" + bootnodoor_enode)
-    elif network_params.network == constants.NETWORK_NAME.kurtosis:
+    if network_params.network == constants.NETWORK_NAME.kurtosis:
         if len(existing_el_clients) > 0:
             cmd.append(
                 "--bootnodes="

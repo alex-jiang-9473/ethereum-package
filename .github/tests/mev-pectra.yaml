@@ -6,10 +6,10 @@ participants:
     cl_image: sigp/lighthouse:v7.0.1
 
   - el_type: nethermind
-    el_image: nethermindeth/nethermind:release-1.31.9-genesis-pectra
+    el_image: nethermind/nethermind:1.33.1
     el_extra_params: ["--Blocks.ExtraData=TekuFromLocal"]
     cl_type: teku
-    cl_image: consensys/teku:25.4.1
+    cl_image: consensys/teku:25.9.2
 
   - el_type: reth
     el_image: ghcr.io/paradigmxyz/reth:v1.3.12
@@ -21,8 +21,8 @@ participants:
     el_image: erigontech/erigon:v3.0.2
     el_extra_params: ["--miner.extradata=prysmFromLocal"]
     cl_type: prysm
-    cl_image: prysmaticlabs/prysm-beacon-chain:v6.0.1
-    vc_image: prysmaticlabs/prysm-validator:v6.0.1
+    cl_image: offchainlabs/prysm-beacon-chain:v6.0.1
+    vc_image: offchainlabs/prysm-validator:v6.0.1
 
   - el_type: besu
     el_image: hyperledger/besu:25.4.1
@@ -44,7 +44,7 @@ additional_services:
 mev_type: flashbots
 
 mev_params:
-  mev_relay_image: flashbots/mev-boost-relay:0.30.1
+  mev_relay_image: flashbots/mev-boost-relay:0.30.2
   mev_boost_image: flashbots/mev-boost:1.9
   mev_builder_cl_image: sigp/lighthouse:v7.0.1
   mev_builder_image: ethpandaops/reth-rbuilder:v1.1.0

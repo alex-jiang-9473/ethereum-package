@@ -73,9 +73,8 @@ network_params:
 additional_services:
   - dora
   - spamoor
-  - prometheus_grafana
+  - prometheus
+  - grafana
 
 snooper_enabled: false
 
-dora_params:
-  image: ethpandaops/dora:fulu-support

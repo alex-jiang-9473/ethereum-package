@@ -25,6 +25,11 @@ APACHE_ENR_FILEPATH = STATIC_FILES_DIRPATH + "/apache-config/enr.txt.tmpl"
 APACHE_ENR_LIST_FILEPATH = STATIC_FILES_DIRPATH + "/apache-config/enr_list.txt.tmpl"
 APACHE_ENODE_FILEPATH = STATIC_FILES_DIRPATH + "/apache-config/enode.txt.tmpl"
 
+NGINX_CONFIG_FILEPATH = STATIC_FILES_DIRPATH + "/nginx-config/index.html"
+NGINX_ENR_FILEPATH = STATIC_FILES_DIRPATH + "/nginx-config/enr.txt.tmpl"
+NGINX_ENR_LIST_FILEPATH = STATIC_FILES_DIRPATH + "/nginx-config/enr_list.txt.tmpl"
+NGINX_ENODE_FILEPATH = STATIC_FILES_DIRPATH + "/nginx-config/enode.txt.tmpl"
+
 DORA_CONFIG_TEMPLATE_FILEPATH = STATIC_FILES_DIRPATH + "/dora-config/config.yaml.tmpl"
 DUGTRIO_CONFIG_TEMPLATE_FILEPATH = (
     STATIC_FILES_DIRPATH + "/dugtrio-config/config.yaml.tmpl"
@@ -32,6 +37,10 @@ DUGTRIO_CONFIG_TEMPLATE_FILEPATH = (
 BLUTGANG_CONFIG_TEMPLATE_FILEPATH = (
     STATIC_FILES_DIRPATH + "/blutgang-config/config.toml.tmpl"
 )
+CHECKPOINTZ_CONFIG_TEMPLATE_FILEPATH = (
+    STATIC_FILES_DIRPATH + "/checkpointz-config/config.yaml.tmpl"
+)
+ERPC_CONFIG_TEMPLATE_FILEPATH = STATIC_FILES_DIRPATH + "/erpc-config/erpc.yaml.tmpl"
 FORKY_CONFIG_TEMPLATE_FILEPATH = STATIC_FILES_DIRPATH + "/forky-config/config.yaml.tmpl"
 TRACOOR_CONFIG_TEMPLATE_FILEPATH = (
     STATIC_FILES_DIRPATH + "/tracoor-config/config.yaml.tmpl"
@@ -54,6 +63,9 @@ SPAMOOR_CONFIG_DIRPATH = "/spamoor-config"
 SPAMOOR_CONFIG_TEMPLATE_FILEPATH = (
     STATIC_FILES_DIRPATH + SPAMOOR_CONFIG_DIRPATH + "/startup-spammer.yaml.tmpl"
 )
+SPAMOOR_HOSTS_TEMPLATE_FILEPATH = (
+    STATIC_FILES_DIRPATH + SPAMOOR_CONFIG_DIRPATH + "/rpc-hosts.txt.tmpl"
+)
 
 # xatu-sentry config
 XATU_SENTRY_CONFIG_DIRPATH = "/xatu-sentry-config"
@@ -74,6 +86,9 @@ GRAFANA_DASHBOARD_PROVIDERS_CONFIG_TEMPLATE_FILEPATH = (
 GRAFANA_DASHBOARDS_CONFIG_DIRPATH = (
     STATIC_FILES_DIRPATH + GRAFANA_CONFIG_DIRPATH + "/dashboards"
 )
+
+# Tempo config
+TEMPO_CONFIG_TEMPLATE_FILEPATH = STATIC_FILES_DIRPATH + "/tempo-config/tempo.yaml.tmpl"
 
 # Geth + CL genesis generation
 GENESIS_GENERATION_CONFIG_DIRPATH = STATIC_FILES_DIRPATH + "/genesis-generation-config"
@@ -114,4 +129,8 @@ FLASHBOTS_RBUILDER_CONFIG_FILEPATH = (
 
 COMMIT_BOOST_CONFIG_FILEPATH = (
     STATIC_FILES_DIRPATH + "/mev/commit-boost/cb-config.toml.tmpl"
+)
+
+MEMPOOL_BRIDGE_CONFIG_TEMPLATE_FILEPATH = (
+    STATIC_FILES_DIRPATH + "/mempool-bridge-config/config.yaml.tmpl"
 )

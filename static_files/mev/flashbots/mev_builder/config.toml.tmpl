@@ -10,7 +10,6 @@ reth_datadir = "{{ .DataDir }}"
 
 coinbase_secret_key = "{{ .SecretKey }}"
 relay_secret_key = "{{ .SecretKey }}"
-optimistic_relay_secret_key = "{{ .SecretKey }}"
 
 # cl_node_url can be a single value, array of values, or passed by an environment variables with values separated with a comma
 cl_node_url = ["{{ .CLEndpoint }}"]
@@ -58,9 +57,3 @@ discard_txs = true
 sorting = "max-profit"
 failed_order_retries = 1
 drop_failed_orders = true
-
-[[builders]]
-name = "parallel"
-algo = "parallel-builder"
-discard_txs = true
-num_threads = 25
