@@ -2,7 +2,6 @@ shared_utils = import_module("../shared_utils/shared_utils.star")
 postgres = import_module("github.com/kurtosis-tech/postgres-package/main.star")
 redis = import_module("github.com/kurtosis-tech/redis-package/main.star")
 constants = import_module("../package_io/constants.star")
-input_parser = import_module("../package_io/input_parser.star")
 IMAGE_NAME = "gobitfly/eth2-beaconchain-explorer:latest"
 
 POSTGRES_PORT_ID = "postgres"
@@ -18,22 +17,6 @@ FRONTEND_PORT_NUMBER = 8080
 LITTLE_BIGTABLE_PORT_NUMBER = 9000
 
 FULL_BEACONCHAIN_CONFIG_FILENAME = "beaconchain-config.yml"
-
-
-def get_little_bigtable_host(little_bigtable, port_publisher):
-    if port_publisher.additional_services_enabled:
-        return port_publisher.additional_services_nat_exit_ip
-    return little_bigtable.ip_address
-
-
-def get_little_bigtable_port(little_bigtable, port_publisher):
-    if port_publisher.additional_services_enabled:
-        public_ports = shared_utils.get_public_ports_for_component(
-            "additional_services", port_publisher, 0
-        )
-        return public_ports[0]  # Use first port for little bigtable
-    return LITTLE_BIGTABLE_PORT_NUMBER
-
 
 # The min/max CPU/memory that postgres can use
 POSTGRES_MIN_CPU = 10
@@ -104,11 +87,9 @@ def launch_full_beacon(
     el_contexts,
     persistent,
     global_node_selectors,
-    global_tolerations,
     port_publisher,
     additional_service_index,
 ):
-    tolerations = shared_utils.get_tolerations(global_tolerations=global_tolerations)
     node_selectors = global_node_selectors
     postgres_output = postgres.run(
         plan,
@@ -123,7 +104,6 @@ def launch_full_beacon(
         max_memory=POSTGRES_MAX_MEMORY,
         persistent=persistent,
         node_selectors=node_selectors,
-        tolerations=tolerations,
     )
     redis_output = redis.run(
         plan,
@@ -134,13 +114,12 @@ def launch_full_beacon(
         min_memory=REDIS_MIN_MEMORY,
         max_memory=REDIS_MAX_MEMORY,
         node_selectors=node_selectors,
-        tolerations=tolerations,
     )
     # TODO perhaps create a new service for the littlebigtable
     little_bigtable = plan.add_service(
         name="beaconchain-littlebigtable",
         config=get_little_bigtable_config(
-            node_selectors, tolerations, port_publisher, additional_service_index
+            node_selectors, port_publisher, additional_service_index
         ),
     )
 
@@ -154,8 +133,8 @@ def launch_full_beacon(
         cl_contexts[0].http_port,
         cl_contexts[0].client_name,
         el_uri,
-        get_little_bigtable_host(little_bigtable, port_publisher),
-        get_little_bigtable_port(little_bigtable, port_publisher),
+        little_bigtable.ip_address,
+        LITTLE_BIGTABLE_PORT_NUMBER,
         postgres_output.service.name,
         POSTGRES_PORT_NUMBER,
         redis_url,
@@ -191,7 +170,6 @@ def launch_full_beacon(
             min_memory=INIT_MIN_MEMORY,
             max_memory=INIT_MAX_MEMORY,
             node_selectors=node_selectors,
-            tolerations=tolerations,
         ),
     )
 
@@ -245,7 +223,6 @@ def launch_full_beacon(
             min_memory=INDEXER_MIN_MEMORY,
             max_memory=INDEXER_MAX_MEMORY,
             node_selectors=node_selectors,
-            tolerations=tolerations,
         ),
     )
     # Start the eth1indexer
@@ -271,7 +248,6 @@ def launch_full_beacon(
             min_memory=ETH1INDEXER_MIN_MEMORY,
             max_memory=ETH1INDEXER_MAX_MEMORY,
             node_selectors=node_selectors,
-            tolerations=tolerations,
         ),
     )
 
@@ -290,7 +266,6 @@ def launch_full_beacon(
             min_memory=REWARDSEXPORTER_MIN_MEMORY,
             max_memory=REWARDSEXPORTER_MAX_MEMORY,
             node_selectors=node_selectors,
-            tolerations=tolerations,
         ),
     )
 
@@ -312,7 +287,6 @@ def launch_full_beacon(
             min_memory=STATISTICS_MIN_MEMORY,
             max_memory=STATISTICS_MAX_MEMORY,
             node_selectors=node_selectors,
-            tolerations=tolerations,
         ),
     )
 
@@ -331,24 +305,19 @@ def launch_full_beacon(
             min_memory=FDU_MIN_MEMORY,
             max_memory=FDU_MAX_MEMORY,
             node_selectors=node_selectors,
-            tolerations=tolerations,
         ),
     )
 
     frontend = plan.add_service(
         name="beaconchain-frontend",
         config=get_frontend_config(
-            files,
-            node_selectors,
-            global_tolerations,
-            port_publisher,
-            additional_service_index,
+            files, node_selectors, port_publisher, additional_service_index
         ),
     )
 
 
 def get_little_bigtable_config(
-    node_selectors, tolerations, port_publisher, additional_service_index
+    node_selectors, port_publisher, additional_service_index
 ):
     public_ports = shared_utils.get_additional_service_standard_public_port(
         port_publisher,
@@ -369,12 +338,11 @@ def get_little_bigtable_config(
         min_memory=LITTLE_BIGTABLE_MIN_MEMORY,
         max_memory=LITTLE_BIGTABLE_MAX_MEMORY,
         node_selectors=node_selectors,
-        tolerations=tolerations,
     )
 
 
 def get_frontend_config(
-    files, node_selectors, tolerations, port_publisher, additional_service_index
+    files, node_selectors, port_publisher, additional_service_index
 ):
     public_ports = shared_utils.get_additional_service_standard_public_port(
         port_publisher,
@@ -404,7 +372,6 @@ def get_frontend_config(
         min_memory=FRONTEND_MIN_MEMORY,
         max_memory=FRONTEND_MAX_MEMORY,
         node_selectors=node_selectors,
-        tolerations=tolerations,
     )
 
 

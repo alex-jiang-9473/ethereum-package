@@ -3,17 +3,14 @@ constants = import_module("../package_io/constants.star")
 TCP_PROTOCOL = "TCP"
 UDP_PROTOCOL = "UDP"
 HTTP_APPLICATION_PROTOCOL = "http"
-WS_APPLICATION_PROTOCOL = "ws"
 NOT_PROVIDED_APPLICATION_PROTOCOL = ""
 NOT_PROVIDED_WAIT = "not-provided-wait"
 
 MAX_PORTS_PER_CL_NODE = 7
-MAX_PORTS_PER_EL_NODE = 7
+MAX_PORTS_PER_EL_NODE = 6
 MAX_PORTS_PER_VC_NODE = 3
 MAX_PORTS_PER_REMOTE_SIGNER_NODE = 2
 MAX_PORTS_PER_ADDITIONAL_SERVICE = 2
-MAX_PORTS_PER_MEV_NODE = 2
-MAX_PORTS_PER_OTHER_NODE = 1
 
 
 def new_template_and_data(template, template_data_json):
@@ -96,10 +93,6 @@ def label_maker(
     if supernode:
         labels["ethereum-package.supernode"] = str(supernode)
 
-    # Automatically add client language label if client is known
-    if client in constants.CLIENT_LANGUAGES:
-        labels[constants.CLIENT_LANGUAGE_LABEL_KEY] = constants.CLIENT_LANGUAGES[client]
-
     # Add extra_labels to the labels dictionary
     labels.update(extra_labels)
 
@@ -172,7 +165,6 @@ def get_network_name(network):
 def get_final_genesis_timestamp(plan, padding):
     result = plan.run_sh(
         description="Getting final genesis timestamp",
-        name="read-genesis-timestamp",
         run="echo -n $(($(date +%s) + " + str(padding) + "))",
         store=[StoreSpec(src="/tmp", name="final-genesis-timestamp")],
     )
@@ -254,18 +246,6 @@ def get_public_ports_for_component(
             MAX_PORTS_PER_ADDITIONAL_SERVICE,
             participant_index,
         )
-    elif component == "mev":
-        public_port_range = __get_port_range(
-            port_publisher_params.mev_public_port_start,
-            MAX_PORTS_PER_MEV_NODE,
-            participant_index,
-        )
-    elif component == "other":
-        public_port_range = __get_port_range(
-            port_publisher_params.other_public_port_start,
-            MAX_PORTS_PER_OTHER_NODE,
-            participant_index,
-        )
     return [port for port in range(public_port_range[0], public_port_range[1], 1)]
 
 
@@ -279,7 +259,7 @@ def __get_port_range(port_start, max_ports_per_component, participant_index):
     return (public_port_start, public_port_end)
 
 
-def get_port_specs(port_assignments, wait=NOT_PROVIDED_WAIT):
+def get_port_specs(port_assignments):
     ports = {}
     for port_id, port in port_assignments.items():
         if port_id in [
@@ -292,39 +272,23 @@ def get_port_specs(port_assignments, wait=NOT_PROVIDED_WAIT):
             constants.WS_PORT_ID,
             constants.PROFILING_PORT_ID,
         ]:
-            ports.update({port_id: new_port_spec(port, TCP_PROTOCOL, wait=wait)})
-        elif port_id in [
-            constants.UDP_DISCOVERY_PORT_ID,
-            constants.QUIC_DISCOVERY_PORT_ID,
-            constants.TORRENT_PORT_ID,
-        ]:
-            ports.update({port_id: new_port_spec(port, UDP_PROTOCOL, wait=wait)})
-        elif port_id == constants.DEBUG_PORT_ID:
-            ports.update(
-                {
-                    port_id: new_port_spec(
-                        port, TCP_PROTOCOL, WS_APPLICATION_PROTOCOL, wait=None
-                    )
-                }
-            )
+            ports.update({port_id: new_port_spec(port, TCP_PROTOCOL)})
+        elif port_id == constants.UDP_DISCOVERY_PORT_ID:
+            ports.update({port_id: new_port_spec(port, UDP_PROTOCOL)})
+        elif port_id == constants.QUIC_DISCOVERY_PORT_ID:
+            ports.update({port_id: new_port_spec(port, UDP_PROTOCOL)})
         elif port_id in [
             constants.HTTP_PORT_ID,
             constants.METRICS_PORT_ID,
             constants.VALIDATOR_HTTP_PORT_ID,
             constants.ADMIN_PORT_ID,
-            constants.VALIDATOR_GRPC_PORT_ID,
+            constants.VALDIATOR_GRPC_PORT_ID,
             constants.RBUILDER_PORT_ID,
             constants.RBUILDER_METRICS_PORT_ID,
         ]:
             ports.update(
-                {
-                    port_id: new_port_spec(
-                        port, TCP_PROTOCOL, HTTP_APPLICATION_PROTOCOL, wait=wait
-                    )
-                }
+                {port_id: new_port_spec(port, TCP_PROTOCOL, HTTP_APPLICATION_PROTOCOL)}
             )
-        else:
-            fail("Unknown port id: {}".format(port_id))
     return ports
 
 
@@ -335,28 +299,6 @@ def get_additional_service_standard_public_port(
     if port_publisher.additional_services_enabled:
         public_ports_for_component = get_public_ports_for_component(
             "additional_services", port_publisher, additional_service_index
-        )
-        public_ports = get_port_specs({port_id: public_ports_for_component[port_index]})
-    return public_ports
-
-
-def get_mev_public_port(port_publisher, port_id, additional_service_index, port_index):
-    public_ports = {}
-    if port_publisher.mev_enabled:
-        public_ports_for_component = get_public_ports_for_component(
-            "mev", port_publisher, additional_service_index
-        )
-        public_ports = get_port_specs({port_id: public_ports_for_component[port_index]})
-    return public_ports
-
-
-def get_other_public_port(
-    port_publisher, port_id, additional_service_index, port_index
-):
-    public_ports = {}
-    if port_publisher.other_enabled:
-        public_ports_for_component = get_public_ports_for_component(
-            "other", port_publisher, additional_service_index
         )
         public_ports = get_port_specs({port_id: public_ports_for_component[port_index]})
     return public_ports
@@ -421,74 +363,3 @@ def ensure_alphanumeric_bounds(s):
             break
 
     return s[start:end]
-
-
-def process_extra_mounts(plan, extra_mounts, extra_files_artifacts={}):
-    """
-    Process extra mounts by resolving extra_files references ONLY.
-
-    Args:
-        plan: The Kurtosis plan object
-        extra_mounts: Dictionary where keys are mount paths and values are extra_file names
-        extra_files_artifacts: Dictionary of extra files artifacts from extra_files
-
-    Returns:
-        Dictionary where keys are mount paths and values are artifact names/objects
-    """
-    if not extra_mounts:
-        return {}
-
-    processed_mounts = {}
-    for mount_path, source in extra_mounts.items():
-        # Non-string values (Files artifacts or other objects) - use directly
-        if type(source) != "string":
-            processed_mounts[mount_path] = source
-            continue
-
-        # Source MUST be an extra_files reference
-        if source not in extra_files_artifacts:
-            fail(
-                "Mount source '"
-                + source
-                + "' not found in extra_files. All extra_mounts must reference files defined in extra_files."
-            )
-
-        processed_mounts[mount_path] = extra_files_artifacts[source]
-
-    return processed_mounts
-
-
-def get_tolerations(
-    specific_container_tolerations=[], participant_tolerations=[], global_tolerations=[]
-):
-    toleration_list = []
-    tolerations = []
-    tolerations = (
-        specific_container_tolerations if specific_container_tolerations else []
-    )
-    if not tolerations:
-        tolerations = participant_tolerations if participant_tolerations else []
-        if not tolerations:
-            tolerations = global_tolerations if global_tolerations else []
-    if tolerations != []:
-        for toleration_data in tolerations:
-            if toleration_data.get("toleration_seconds"):
-                toleration_list.append(
-                    Toleration(
-                        key=toleration_data.get("key", ""),
-                        value=toleration_data.get("value", ""),
-                        operator=toleration_data.get("operator", ""),
-                        effect=toleration_data.get("effect", ""),
-                        toleration_seconds=toleration_data.get("toleration_seconds"),
-                    )
-                )
-            else:
-                toleration_list.append(
-                    Toleration(
-                        key=toleration_data.get("key", ""),
-                        value=toleration_data.get("value", ""),
-                        operator=toleration_data.get("operator", ""),
-                        effect=toleration_data.get("effect", ""),
-                    )
-                )
-    return toleration_list

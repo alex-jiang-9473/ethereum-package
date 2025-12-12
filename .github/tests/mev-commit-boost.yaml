@@ -8,8 +8,7 @@ additional_services:
   - custom_flood
   - forkmon
   - dora
-  - prometheus
-  - grafana
+  - prometheus_grafana
 mev_params:
   mev_boost_image: ghcr.io/commit-boost/pbs:latest
 network_params:

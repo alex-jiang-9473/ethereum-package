@@ -39,27 +39,23 @@ def launch(
     service_name,
     node_keystore_files,
     beacon_http_url,
-    participant,
+    extra_params,
     node_selectors,
-    global_tolerations,
 ):
-    tolerations = shared_utils.get_tolerations(global_tolerations=global_tolerations)
-
     blobber_service_name = "{0}".format(service_name)
 
     blobber_config = get_config(
         service_name,
         node_keystore_files,
         beacon_http_url,
-        participant,
+        extra_params,
         node_selectors,
-        tolerations,
     )
 
     blobber_service = plan.add_service(blobber_service_name, blobber_config)
     return blobber_context.new_blobber_context(
-        blobber_service.name,
-        blobber_service.ports[BLOBBER_VALIDATOR_PROXY_PORT_ID].number,
+        blobber_service.ip_address,
+        blobber_service.ports[BLOBBER_VALIDATOR_PROXY_PORT_NUM],
     )
 
 
@@ -67,9 +63,8 @@ def get_config(
     service_name,
     node_keystore_files,
     beacon_http_url,
-    participant,
+    extra_params,
     node_selectors,
-    tolerations,
 ):
     validator_root_dirpath = shared_utils.path_join(
         VALIDATOR_KEYS_MOUNTPOINT_ON_CLIENTS,
@@ -80,15 +75,16 @@ def get_config(
         "--cl={0}".format(beacon_http_url),
         "--validator-key-folder={0}".format(validator_root_dirpath),
         "--enable-unsafe-mode",
+        # Does this get affected by public ip address changes?
         "--external-ip={0}".format(constants.PRIVATE_IP_ADDRESS_PLACEHOLDER),
         "--validator-proxy-port-start={0}".format(BLOBBER_VALIDATOR_PROXY_PORT_NUM),
     ]
 
-    if len(participant.blobber_extra_params) > 0:
-        cmd.extend([param for param in participant.blobber_extra_params])
+    if len(extra_params) > 0:
+        cmd.extend([param for param in extra_params])
 
     return ServiceConfig(
-        image=participant.blobber_image,
+        image=DEFAULT_BLOBBER_IMAGE,
         ports=BLOBBER_USED_PORTS,
         files={
             VALIDATOR_KEYS_MOUNTPOINT_ON_CLIENTS: node_keystore_files.files_artifact_uuid
@@ -100,5 +96,4 @@ def get_config(
         min_memory=MIN_MEMORY,
         max_memory=MAX_MEMORY,
         node_selectors=node_selectors,
-        tolerations=tolerations,
     )

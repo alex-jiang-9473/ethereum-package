@@ -3,7 +3,6 @@ input_parser = import_module("../../../package_io/input_parser.star")
 static_files = import_module("../../../static_files/static_files.star")
 constants = import_module("../../../package_io/constants.star")
 flashbots_relay = import_module("../mev_relay/mev_relay_launcher.star")
-helix_relay = import_module("../../helix/helix_relay_launcher.star")
 lighthouse = import_module("../../../cl/lighthouse/lighthouse_launcher.star")
 # MEV Builder flags
 
@@ -17,7 +16,7 @@ MEV_FILE_PATH_ON_CONTAINER = (
 
 def new_builder_config(
     plan,
-    mev_type,
+    service_name,
     network_params,
     fee_recipient,
     mnemonic,
@@ -37,7 +36,6 @@ def new_builder_config(
         mev_params.mev_builder_extra_data,
         num_of_participants,
         mev_params.mev_builder_subsidy,
-        mev_type,
     )
     flashbots_builder_config_template = read_file(
         static_files.FLASHBOTS_RBUILDER_CONFIG_FILEPATH
@@ -72,18 +70,7 @@ def new_builder_config_template_data(
     extra_data,
     num_of_participants,
     subsidy,
-    mev_type,
 ):
-    # Determine relay service name and port based on MEV type
-    if mev_type == constants.HELIX_MEV_TYPE:
-        relay_service = "helix-relay"
-        relay_port = helix_relay.HELIX_RELAY_ENDPOINT_PORT
-        relay_name = "helix"
-    else:
-        relay_service = "mev-relay-api"
-        relay_port = flashbots_relay.MEV_RELAY_ENDPOINT_PORT
-        relay_name = "flashbots"
-
     return {
         "Network": network_params.network
         if network_params.network in constants.PUBLIC_NETWORKS
@@ -96,9 +83,8 @@ def new_builder_config_template_data(
             lighthouse.BEACON_HTTP_PORT_NUM,
         ),
         "GenesisForkVersion": constants.GENESIS_FORK_VERSION,
-        "Relay": relay_service,
-        "RelayPort": relay_port,
-        "RelayName": relay_name,
+        "Relay": "mev-relay-api",
+        "RelayPort": flashbots_relay.MEV_RELAY_ENDPOINT_PORT,
         "PublicKey": pubkey,
         "SecretKey": secret,
         "Mnemonic": mnemonic,

@@ -39,9 +39,11 @@ def launch(
     port_publisher,
     participant_index,
     network_params,
-    extra_files_artifacts,
-    bootnodoor_enode=None,
 ):
+    log_level = input_parser.get_client_log_level_or_default(
+        participant.el_log_level, global_log_level, VERBOSITY_LEVELS
+    )
+
     cl_client_name = service_name.split("-")[3]
 
     config = get_config(
@@ -51,24 +53,40 @@ def launch(
         service_name,
         existing_el_clients,
         cl_client_name,
-        global_log_level,
+        log_level,
         persistent,
         tolerations,
         node_selectors,
         port_publisher,
         participant_index,
         network_params,
-        extra_files_artifacts,
-        bootnodoor_enode,
     )
 
     service = plan.add_service(service_name, config)
 
-    return get_el_context(
-        plan,
-        service_name,
-        service,
-        launcher,
+    enode = el_admin_node_info.get_enode_for_node(
+        plan, service_name, constants.RPC_PORT_ID
+    )
+
+    metrics_url = "{0}:{1}".format(service.ip_address, METRICS_PORT_NUM)
+    nethermind_metrics_info = node_metrics.new_node_metrics_info(
+        service_name, METRICS_PATH, metrics_url
+    )
+
+    http_url = "http://{0}:{1}".format(service.ip_address, RPC_PORT_NUM)
+    ws_url = "ws://{0}:{1}".format(service.ip_address, WS_PORT_NUM)
+
+    return el_context.new_el_context(
+        client_name="nethermind",
+        enode=enode,
+        ip_addr=service.ip_address,
+        rpc_port_num=RPC_PORT_NUM,
+        ws_port_num=WS_PORT_NUM,
+        engine_rpc_port_num=ENGINE_RPC_PORT_NUM,
+        rpc_http_url=http_url,
+        ws_url=ws_url,
+        service_name=service_name,
+        el_metrics_info=[nethermind_metrics_info],
     )
 
 
@@ -79,20 +97,14 @@ def get_config(
     service_name,
     existing_el_clients,
     cl_client_name,
-    global_log_level,
+    log_level,
     persistent,
     tolerations,
     node_selectors,
     port_publisher,
     participant_index,
     network_params,
-    extra_files_artifacts,
-    bootnodoor_enode=None,
 ):
-    log_level = input_parser.get_client_log_level_or_default(
-        participant.el_log_level, global_log_level, VERBOSITY_LEVELS
-    )
-
     public_ports = {}
     public_ports_for_component = None
     if port_publisher.el_enabled:
@@ -136,13 +148,13 @@ def get_config(
         "--datadir=" + EXECUTION_DATA_DIRPATH_ON_CLIENT_CONTAINER,
         "--Init.WebSocketsEnabled=true",
         "--JsonRpc.Enabled=true",
-        "--JsonRpc.EnabledModules=net,eth,consensus,subscribe,web3,admin,debug,txpool,trace",
+        "--JsonRpc.EnabledModules=net,eth,consensus,subscribe,web3,admin,debug,txpool",
         "--JsonRpc.Host=0.0.0.0",
         "--JsonRpc.Port={0}".format(RPC_PORT_NUM),
         "--JsonRpc.WebSocketsPort={0}".format(WS_PORT_NUM),
         "--JsonRpc.EngineHost=0.0.0.0",
         "--JsonRpc.EnginePort={0}".format(ENGINE_RPC_PORT_NUM),
-        "--Network.ExternalIp={0}".format(port_publisher.el_nat_exit_ip),
+        "--Network.ExternalIp={0}".format(port_publisher.nat_exit_ip),
         "--Network.DiscoveryPort={0}".format(discovery_port_tcp),
         "--Network.P2PPort={0}".format(discovery_port_tcp),
         "--JsonRpc.JwtSecretFile=" + constants.JWT_MOUNT_PATH_ON_CONTAINER,
@@ -150,10 +162,6 @@ def get_config(
         "--Metrics.ExposePort={0}".format(METRICS_PORT_NUM),
         "--Metrics.ExposeHost=0.0.0.0",
     ]
-
-    # Configure storage type - nethermind defaults to hybrid pruning, use None mode for archive
-    if participant.el_storage_type == "archive":
-        cmd.append("--Pruning.Mode=None")
 
     if network_params.gas_limit > 0:
         cmd.append("--Blocks.TargetBlockGasLimit={0}".format(network_params.gas_limit))
@@ -173,19 +181,10 @@ def get_config(
             + constants.GENESIS_CONFIG_MOUNT_PATH_ON_CONTAINER
             + "/chainspec.json"
         )
-
-        # Configure block timing to match consensus layer
-        if network_params.seconds_per_slot and network_params.seconds_per_slot != 12:
-            cmd.append(
-                "--Blocks.SecondsPerSlot={0}".format(network_params.seconds_per_slot)
-            )
     else:
         cmd.append("--config=" + network_params.network)
 
-    # Handle bootnode configuration with bootnodoor_enode override
-    if bootnodoor_enode != None:
-        cmd.append("--Discovery.Bootnodes=" + bootnodoor_enode)
-    elif (
+    if (
         network_params.network == constants.NETWORK_NAME.kurtosis
         or constants.NETWORK_NAME.shadowfork in network_params.network
     ):
@@ -220,25 +219,14 @@ def get_config(
     }
 
     if persistent:
-        volume_size_key = (
-            "devnets" if "devnet" in network_params.network else network_params.network
-        )
         files[EXECUTION_DATA_DIRPATH_ON_CLIENT_CONTAINER] = Directory(
             persistent_key="data-{0}".format(service_name),
             size=int(participant.el_volume_size)
             if int(participant.el_volume_size) > 0
-            else constants.VOLUME_SIZE[volume_size_key][
+            else constants.VOLUME_SIZE[network_params.network][
                 constants.EL_TYPE.nethermind + "_volume_size"
             ],
         )
-
-    # Add extra mounts - automatically handle file uploads
-    processed_mounts = shared_utils.process_extra_mounts(
-        plan, participant.el_extra_mounts, extra_files_artifacts
-    )
-    for mount_path, artifact in processed_mounts.items():
-        files[mount_path] = artifact
-
     env_vars = participant.el_extra_env_vars
     config_args = {
         "image": participant.el_image,
@@ -253,8 +241,7 @@ def get_config(
             client_type=constants.CLIENT_TYPES.el,
             image=participant.el_image[-constants.MAX_LABEL_LENGTH :],
             connected_client=cl_client_name,
-            extra_labels=participant.el_extra_labels
-            | {constants.NODE_INDEX_LABEL_KEY: str(participant_index + 1)},
+            extra_labels=participant.el_extra_labels,
             supernode=participant.supernode,
         ),
         "tolerations": tolerations,
@@ -270,38 +257,6 @@ def get_config(
     if participant.el_max_mem > 0:
         config_args["max_memory"] = participant.el_max_mem
     return ServiceConfig(**config_args)
-
-
-def get_el_context(
-    plan,
-    service_name,
-    service,
-    launcher,
-):
-    enode = el_admin_node_info.get_enode_for_node(
-        plan, service_name, constants.RPC_PORT_ID
-    )
-
-    metrics_url = "{0}:{1}".format(service.name, METRICS_PORT_NUM)
-    nethermind_metrics_info = node_metrics.new_node_metrics_info(
-        service_name, METRICS_PATH, metrics_url
-    )
-
-    http_url = "http://{0}:{1}".format(service.name, RPC_PORT_NUM)
-    ws_url = "ws://{0}:{1}".format(service.name, WS_PORT_NUM)
-
-    return el_context.new_el_context(
-        client_name="nethermind",
-        enode=enode,
-        ip_addr=service.name,
-        rpc_port_num=RPC_PORT_NUM,
-        ws_port_num=WS_PORT_NUM,
-        engine_rpc_port_num=ENGINE_RPC_PORT_NUM,
-        rpc_http_url=http_url,
-        ws_url=ws_url,
-        service_name=service_name,
-        el_metrics_info=[nethermind_metrics_info],
-    )
 
 
 def new_nethermind_launcher(el_cl_genesis_data, jwt_file):

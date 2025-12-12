@@ -9,19 +9,18 @@ participants:
     cl_type: lighthouse
   - el_type: reth
     cl_type: lodestar
-  - el_type: ethrex
+  - el_type: ethereumjs
     cl_type: teku
 additional_services:
   - tx_fuzz
   - forkmon
   - dora
-  - checkpointz
-  - prometheus
-  - grafana
+  - prometheus_grafana
   - custom_flood
+  - blobscan
   - blockscout
   - dugtrio
-  - erpc
+  - blutgang
   - apache
   - tracoor
   - spamoor

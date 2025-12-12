@@ -10,47 +10,11 @@ def launch(
     plan, participants, network_params, global_tolerations, global_node_selectors
 ):
     if network_params.force_snapshot_sync:
-        # Fetch block data and determine block height
-        if network_params.shadowfork_block_height == "latest":
-            latest_block = plan.run_sh(
-                name="fetch-latest-block-data-public",
-                description="Fetching the latest block data for public network",
-                run="mkdir -p /blocks && \
-                BASE_URL='"
-                + network_params.network_sync_base_url
-                + network_params.network
-                + '\' && \
-                LATEST_BLOCK=$(curl -s "${BASE_URL}/geth/latest") && \
-                echo "Latest block number: $LATEST_BLOCK" && \
-                echo $LATEST_BLOCK > /blocks/block_height.txt',
-                store=[StoreSpec(src="/blocks", name="latest")],
-                tolerations=shared_utils.get_tolerations(
-                    global_tolerations=global_tolerations
-                ),
-                node_selectors=global_node_selectors,
-            )
-        else:
-            latest_block = plan.run_sh(
-                name="fetch-specific-block-data-public",
-                description="Fetching block data for specific block",
-                run="mkdir -p /blocks && \
-                echo Specific block number: "
-                + str(network_params.shadowfork_block_height)
-                + " && echo "
-                + str(network_params.shadowfork_block_height)
-                + " > /blocks/block_height.txt",
-                store=[StoreSpec(src="/blocks", name="latest")],
-                tolerations=shared_utils.get_tolerations(
-                    global_tolerations=global_tolerations
-                ),
-                node_selectors=global_node_selectors,
-            )
-
         for index, participant in enumerate(participants):
-            tolerations = shared_utils.get_tolerations(
-                specific_container_tolerations=participant.el_tolerations,
-                participant_tolerations=participant.tolerations,
-                global_tolerations=global_tolerations,
+            tolerations = input_parser.get_client_tolerations(
+                participant.el_tolerations,
+                participant.tolerations,
+                global_tolerations,
             )
             node_selectors = input_parser.get_client_node_selectors(
                 participant.node_selectors,
@@ -71,15 +35,13 @@ def launch(
                 config=ServiceConfig(
                     image="alpine:3.19.1",
                     cmd=[
-                        "apk add --no-cache curl tar zstd && "
-                        + "BLOCK_HEIGHT=$(cat /shared/block_height.txt) && "
-                        + 'echo "Using block height: $BLOCK_HEIGHT" && '
-                        + "curl -s -L "
+                        "apk add --no-cache curl tar zstd && curl -s -L "
                         + network_params.network_sync_base_url
                         + network_params.network
                         + "/"
                         + el_type
-                        + "/$BLOCK_HEIGHT/snapshot.tar.zst"
+                        + "/latest"
+                        + "/snapshot.tar.zst"
                         + " | tar -I zstd -xvf - -C /data/"
                         + el_type
                         + "/execution-data"
@@ -96,7 +58,6 @@ def launch(
                                 el_type + "_volume_size"
                             ],
                         ),
-                        "/shared": "latest",
                     },
                     tolerations=tolerations,
                     node_selectors=node_selectors,
@@ -121,25 +82,18 @@ def launch(
                 interval="1s",
                 timeout="6h",  # 6 hours should be enough for the biggest network
             )
+            plan.remove_service(name="snapshot-{0}".format(el_service_name))
 
-    fetch_osaka_time = plan.run_sh(
-        name="fetch-osaka-time",
-        description="Fetching osaka time from genesis",
-        run="mkdir -p /network-configs && \
-            cd /network-configs && \
-            BASE_URL=https://raw.githubusercontent.com/eth-clients/"
-        + network_params.network
-        + "/main/metadata && \
-            curl -fsSL -o genesis.json \"$BASE_URL/genesis.json\" || echo \"genesis.json not found\" && \
-            jq '.config.osakaTime' /network-configs/genesis.json | tr -d '\n'",
+    # We are running a public network
+    dummy_genesis_data = plan.run_sh(
+        name="dummy-genesis-data",
+        description="Creating network configs folder",
+        run="mkdir /network-configs",
         store=[StoreSpec(src="/network-configs/", name="el_cl_genesis_data")],
-        tolerations=shared_utils.get_tolerations(global_tolerations=global_tolerations),
-        node_selectors=global_node_selectors,
     )
     el_cl_data = el_cl_genesis_data.new_el_cl_genesis_data(
-        fetch_osaka_time.files_artifacts[0],
+        dummy_genesis_data.files_artifacts[0],
         constants.GENESIS_VALIDATORS_ROOT[network_params.network],
-        fetch_osaka_time.output,
     )
     final_genesis_timestamp = constants.GENESIS_TIME[network_params.network]
     network_id = constants.NETWORK_ID[network_params.network]

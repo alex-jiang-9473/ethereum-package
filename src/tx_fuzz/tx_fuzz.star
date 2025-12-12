@@ -1,5 +1,4 @@
 shared_utils = import_module("../shared_utils/shared_utils.star")
-input_parser = import_module("../package_io/input_parser.star")
 SERVICE_NAME = "tx-fuzz"
 
 # The min/max CPU/memory that tx-fuzz can use
@@ -15,16 +14,12 @@ def launch_tx_fuzz(
     el_uri,
     tx_fuzz_params,
     global_node_selectors,
-    global_tolerations,
 ):
-    tolerations = shared_utils.get_tolerations(global_tolerations=global_tolerations)
-
     config = get_config(
         prefunded_addresses,
         el_uri,
         tx_fuzz_params,
         global_node_selectors,
-        tolerations,
     )
     plan.add_service(SERVICE_NAME, config)
 
@@ -34,7 +29,6 @@ def get_config(
     el_uri,
     tx_fuzz_params,
     node_selectors,
-    tolerations,
 ):
     cmd = [
         "spam",
@@ -53,5 +47,4 @@ def get_config(
         min_memory=MIN_MEMORY,
         max_memory=MAX_MEMORY,
         node_selectors=node_selectors,
-        tolerations=tolerations,
     )

@@ -15,6 +15,6 @@ participants:
   - el_type: reth
     cl_type: nimbus
     use_separate_vc: true
-  - el_type: ethrex
+  - el_type: ethereumjs
     cl_type: nimbus
     use_separate_vc: true

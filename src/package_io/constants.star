@@ -7,7 +7,6 @@ EL_TYPE = struct(
     reth_builder="reth-builder",
     ethereumjs="ethereumjs",
     nimbus="nimbus",
-    ethrex="ethrex",
 )
 
 CL_TYPE = struct(
@@ -58,12 +57,11 @@ VALIDATOR_HTTP_PORT_ID = "http-validator"
 METRICS_PORT_ID = "metrics"
 ENGINE_RPC_PORT_ID = "engine-rpc"
 ENGINE_WS_PORT_ID = "engine-ws"
-DEBUG_PORT_ID = "debug"
 ADMIN_PORT_ID = "admin"
 RBUILDER_PORT_ID = "rbuilder-rpc"
 RBUILDER_METRICS_PORT_ID = "rbuilder-metric"
 LITTLE_BIGTABLE_PORT_ID = "littlebigtable"
-VALIDATOR_GRPC_PORT_ID = "grpc"
+VALDIATOR_GRPC_PORT_ID = "grpc"
 
 VALIDATING_REWARDS_ACCOUNT = "0x8943545177806ED17B9F23F0a21ee5948eCaa776"
 MAX_ENR_ENTRIES = 20
@@ -92,15 +90,12 @@ MOCK_MEV_TYPE = "mock"
 FLASHBOTS_MEV_TYPE = "flashbots"
 MEV_RS_MEV_TYPE = "mev-rs"
 COMMIT_BOOST_MEV_TYPE = "commit-boost"
-HELIX_MEV_TYPE = "helix"
 DEFAULT_DORA_IMAGE = "ethpandaops/dora:latest"
-DEFAULT_CHECKPOINTZ_IMAGE = "ethpandaops/checkpointz:latest"
 DEFAULT_SPAMOOR_IMAGE = "ethpandaops/spamoor:latest"
 DEFAULT_ASSERTOOR_IMAGE = "ethpandaops/assertoor:latest"
 DEFAULT_SNOOPER_IMAGE = "ethpandaops/rpc-snooper:latest"
-DEFAULT_BOOTNODOOR_IMAGE = "ethpandaops/bootnodoor:latest"
 DEFAULT_ETHEREUM_GENESIS_GENERATOR_IMAGE = (
-    "ethpandaops/ethereum-genesis-generator:5.2.2"
+    "ethpandaops/ethereum-genesis-generator:4.0.4"
 )
 DEFAULT_YQ_IMAGE = "linuxserver/yq"
 DEFAULT_FLASHBOTS_RELAY_IMAGE = "ethpandaops/mev-boost-relay:main"
@@ -110,14 +105,11 @@ DEFAULT_MEV_RS_IMAGE = "ethpandaops/mev-rs:main"
 DEFAULT_MEV_RS_IMAGE_MINIMAL = "ethpandaops/mev-rs:main-minimal"
 DEFAULT_COMMIT_BOOST_MEV_BOOST_IMAGE = "ghcr.io/commit-boost/pbs:latest"
 DEFAULT_MOCK_MEV_IMAGE = "ethpandaops/rustic-builder:main"
-DEFAULT_HELIX_RELAY_IMAGE = "ghcr.io/gattaca-com/helix-relay:main"
 DEFAULT_MEV_PUBKEY = "0xa55c1285d84ba83a5ad26420cd5ad3091e49c55a813eee651cd467db38a8c8e63192f47955e9376f6b42f6d190571cb5"
 DEFAULT_MEV_SECRET_KEY = (
     "0x607a11b45a7219cc61a3d9c5fd08c7eebd602a6a19a977f8d3771d5711a550f2"
 )
-MEV_BOOST_SERVICE_NAME_PREFIX = "mev-boost"
-COMMIT_BOOST_SERVICE_NAME_PREFIX = "commit-boost"
-MEV_BOOST_PORT = 18550
+
 DEFAULT_MNEMONIC = "giant issue aisle success illegal bike spike question tent bar rely arctic volcano long crawl hungry vocal artwork sniff fantasy very lucky have athlete"
 
 PRIVATE_IP_ADDRESS_PLACEHOLDER = "KURTOSIS_IP_ADDR_PLACEHOLDER"
@@ -129,8 +121,7 @@ CAPELLA_FORK_VERSION = "0x40000038"
 DENEB_FORK_VERSION = "0x50000038"
 ELECTRA_FORK_VERSION = "0x60000038"
 FULU_FORK_VERSION = "0x70000038"
-GLOAS_FORK_VERSION = "0x80000038"
-EIP7441_FORK_VERSION = "0xa0000038"
+EIP7732_FORK_VERSION = "0x80000038"
 EIP7805_FORK_VERSION = "0x90000038"
 
 FAR_FUTURE_EPOCH = 18446744073709551615
@@ -195,7 +186,7 @@ GENESIS_TIME = {
     "mainnet": 1606824023,
     "sepolia": 1655733600,
     "holesky": 1695902400,
-    "hoodi": 1742213400,
+    "hoodi": 1741971600,
 }
 
 VOLUME_SIZE = {
@@ -214,7 +205,6 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 500000,  # 500GB
         "lodestar_volume_size": 500000,  # 500GB
         "grandine_volume_size": 500000,  # 500GB
-        "ethrex_volume_size": 500000,  # 500GB
     },
     "sepolia": {
         "geth_volume_size": 300000,  # 300GB
@@ -231,7 +221,6 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 150000,  # 150GB
         "lodestar_volume_size": 150000,  # 150GB
         "grandine_volume_size": 150000,  # 150GB
-        "ethrex_volume_size": 150000,  # 150GB
     },
     "holesky": {
         "geth_volume_size": 100000,  # 100GB
@@ -248,7 +237,6 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 100000,  # 100GB
         "lodestar_volume_size": 100000,  # 100GB
         "grandine_volume_size": 100000,  # 100GB
-        "ethrex_volume_size": 100000,  # 100GB
     },
     "devnets": {
         "geth_volume_size": 100000,  # 100GB
@@ -265,7 +253,6 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 100000,  # 100GB
         "lodestar_volume_size": 100000,  # 100GB
         "grandine_volume_size": 100000,  # 100GB
-        "ethrex_volume_size": 100000,  # 100GB
     },
     "ephemery": {
         "geth_volume_size": 5000,  # 5GB
@@ -282,7 +269,6 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 1000,  # 1GB
         "lodestar_volume_size": 1000,  # 1GB
         "grandine_volume_size": 1000,  # 1GB
-        "ethrex_volume_size": 1000,  # 1GB
     },
     "kurtosis": {
         "geth_volume_size": 5000,  # 5GB
@@ -299,7 +285,6 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 1000,  # 1GB
         "lodestar_volume_size": 1000,  # 1GB
         "grandine_volume_size": 1000,  # 1GB
-        "ethrex_volume_size": 1000,  # 1GB
     },
     "hoodi": {
         "geth_volume_size": 100000,  # 100GB
@@ -316,38 +301,8 @@ VOLUME_SIZE = {
         "nimbus_volume_size": 100000,  # 100GB
         "lodestar_volume_size": 100000,  # 100GB
         "grandine_volume_size": 100000,  # 100GB
-        "ethrex_volume_size": 100000,  # 100GB
     },
 }
-# Language mapping for client implementations
-CLIENT_LANGUAGES = {
-    # Execution Layer (EL) clients
-    "geth": "go",
-    "erigon": "go",
-    "nethermind": "csharp",
-    "besu": "java",
-    "reth": "rust",
-    "reth-builder": "rust",
-    "ethereumjs": "javascript",
-    "nimbus": "nim",
-    # Consensus Layer (CL) clients
-    "lighthouse": "rust",
-    "teku": "java",
-    "prysm": "go",
-    "lodestar": "typescript",
-    "grandine": "rust",
-    # Validator Clients (VC) - inherit from CL clients
-    "vero": "python",
-    # Remote Signers
-    "web3signer": "java",
-}
-
-# Label key constant for client language
-CLIENT_LANGUAGE_LABEL_KEY = "ethereum-package.client-language"
-
-# Label key constant for node index
-NODE_INDEX_LABEL_KEY = "ethereum-package.node-index"
-
 VOLUME_SIZE["mainnet-shadowfork"] = VOLUME_SIZE["mainnet"]
 VOLUME_SIZE["sepolia-shadowfork"] = VOLUME_SIZE["sepolia"]
 VOLUME_SIZE["holesky-shadowfork"] = VOLUME_SIZE["holesky"]
